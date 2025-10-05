@@ -1,12 +1,11 @@
 import io.restassured.RestAssured;
-import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.notNullValue;
 
-public class AuthIntegrationTest {
+public class PatientIntegrationTest {
 
     @BeforeAll
     static void setUp(){
@@ -14,7 +13,7 @@ public class AuthIntegrationTest {
     }
 
     @Test
-    public void shouldReturnOKWithValidToken(){
+    public void shouldReturnPatientsWithValidToken (){
         // Arrange -> Act -> Assert
 
         //Arrange
@@ -26,36 +25,23 @@ public class AuthIntegrationTest {
                 """;
 
         //Act
-        Response response = given()
-                .contentType("application/json")
-                .body(loginPayload)
-                .when()
-                .post("/auth/login")
-                .then() //Assert
-                .statusCode(200)
-                .body("token", notNullValue())
-                .extract()
-                .response();
-
-        System.out.println("Generated Token: " + response.jsonPath().getString("token"));
-    }
-
-    @Test
-    public void shouldReturnUnauthorizedOnInvalidLogin(){
-
-        String loginPayload = """
-                {
-                    "email": "invalidUser@test.com",
-                    "password": "wrongpassword"
-                }
-                """;
-
-        given()
+        String token = given()
                 .contentType("application/json")
                 .body(loginPayload)
                 .when()
                 .post("/auth/login")
                 .then()
-                .statusCode(401);
+                .statusCode(200)
+                .extract()
+                .jsonPath()
+                .get("token");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .when()
+                .get("/api/patients")
+                .then()// Assert
+                .statusCode(200)
+                .body("patients", notNullValue());
     }
 }
